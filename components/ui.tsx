@@ -1,59 +1,238 @@
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
+'use client';
+
+import React, {
+  type ButtonHTMLAttributes,
+  type HTMLAttributes,
+  type ReactNode,
+  useState,
+} from 'react';
+import { GlassCard } from '@/components/glass-card';
 
 export function cn(...classes: (string | false | null | undefined)[]) {
   return classes.filter(Boolean).join(' ');
 }
 
-export function Card({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
+// Card wrappers leveraging the new GlassCard implementation
+export function Card({
+  className,
+  children,
+  tier = 'raised',
+  ...props
+}: HTMLAttributes<HTMLDivElement> & { tier?: 'base' | 'raised' | 'floating' }) {
   return (
-    <div className={cn('rounded-2xl border border-line/80 bg-panel/80 shadow-panel backdrop-blur', className)} {...props}>
+    <GlassCard tier={tier} className={className} {...props}>
+      {children}
+    </GlassCard>
+  );
+}
+
+export function CardHeader({
+  className,
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn('border-b border-cosmic/60 px-6 py-4', className)}
+      {...props}
+    >
       {children}
     </div>
   );
 }
 
-export function CardHeader({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('border-b border-line/70 px-5 py-4', className)} {...props}>{children}</div>;
+export function CardContent({
+  className,
+  children,
+  ...props
+}: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cn('px-6 py-5', className)} {...props}>
+      {children}
+    </div>
+  );
 }
 
-export function CardContent({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('px-5 py-5', className)} {...props}>{children}</div>;
-}
+// Badge component: Strictly Rose, Amber, Mauve, Cosmic (aliasing cyan/blue/green safely)
+export type BadgeTone = 'neutral' | 'rose' | 'amber' | 'mauve' | 'cyan' | 'blue' | 'green';
 
-export function Badge({ className, tone = 'neutral', children }: { className?: string; tone?: 'neutral' | 'cyan' | 'amber' | 'blue' | 'green'; children: ReactNode }) {
-  const tones = {
-    neutral: 'border-slate-600/60 bg-slate-700/20 text-slate-300',
-    cyan: 'border-cyan/30 bg-cyan/10 text-cyan',
-    amber: 'border-amber/30 bg-amber/10 text-amber',
-    blue: 'border-blue/30 bg-blue/10 text-blue-100',
-    green: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300',
+export function Badge({
+  className,
+  tone = 'rose',
+  children,
+}: {
+  className?: string;
+  tone?: BadgeTone;
+  children: ReactNode;
+}) {
+  // Normalize tones to strict palette
+  const normalizedTone =
+    tone === 'cyan' || tone === 'green'
+      ? 'rose'
+      : tone === 'blue'
+      ? 'mauve'
+      : tone;
+
+  const toneStyles: Record<string, string> = {
+    neutral: 'border-cosmic bg-void/60 text-muted',
+    rose: 'border-rose/30 bg-rose/10 text-rose shadow-[0_0_12px_rgba(209,169,167,0.12)]',
+    amber: 'border-amber/35 bg-amber/10 text-amber shadow-[0_0_12px_rgba(243,166,91,0.15)]',
+    mauve: 'border-mauve/40 bg-mauve/15 text-cream',
   };
-  return <span className={cn('inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]', tones[tone], className)}>{children}</span>;
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.16em] font-semibold backdrop-blur-md',
+        toneStyles[normalizedTone] || toneStyles.rose,
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
 }
 
-export function Button({ className, variant = 'primary', children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' }) {
+// Button with magnetic hover effect and click ripple
+export function Button({
+  className,
+  variant = 'primary',
+  children,
+  onClick,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'amber';
+}) {
+  const [ripple, setRipple] = useState<{ x: number; y: number; show: boolean }>({
+    x: 0,
+    y: 0,
+    show: false,
+  });
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setRipple({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      show: true,
+    });
+    setTimeout(() => setRipple((prev) => ({ ...prev, show: false })), 400);
+
+    if (onClick) onClick(e);
+  };
+
   const variants = {
-    primary: 'border-cyan/30 bg-cyan text-ink hover:bg-cyan/90',
-    secondary: 'border-line bg-white/[0.05] text-slate-100 hover:border-cyan/40 hover:bg-white/[0.08]',
-    ghost: 'border-transparent bg-transparent text-slate-300 hover:border-line hover:bg-white/[0.04] hover:text-white',
-    danger: 'border-red-400/30 bg-red-400/10 text-red-200 hover:bg-red-400/20',
+    primary:
+      'border border-rose/60 bg-rose text-void font-semibold shadow-[0_0_20px_rgba(209,169,167,0.35)] hover:bg-rose/90 hover:shadow-[0_0_30px_rgba(209,169,167,0.5)] active:scale-[0.98]',
+    secondary:
+      'border border-rose/25 bg-[rgba(36,16,47,0.5)] text-cream backdrop-blur-xl hover:border-rose/50 hover:bg-rose/10 hover:shadow-[0_0_20px_rgba(209,169,167,0.15)] active:scale-[0.98]',
+    ghost:
+      'border border-transparent bg-transparent text-muted hover:border-cosmic hover:bg-rose/5 hover:text-cream',
+    amber:
+      'border border-amber/40 bg-amber/15 text-amber hover:bg-amber/25 hover:shadow-[0_0_25px_rgba(243,166,91,0.3)] active:scale-[0.98]',
   };
-  return <button className={cn('inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border px-3.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-cyan/50 disabled:cursor-not-allowed disabled:opacity-45', variants[variant], className)} {...props}>{children}</button>;
+
+  return (
+    <button
+      onClick={handleClick}
+      className={cn(
+        'relative inline-flex min-h-10 items-center justify-center gap-2 overflow-hidden rounded-xl px-4 py-2 text-xs font-semibold tracking-wide transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-rose/50 disabled:cursor-not-allowed disabled:opacity-40',
+        variants[variant],
+        className
+      )}
+      {...props}
+    >
+      {/* Click ripple */}
+      {ripple.show && (
+        <span
+          className="pointer-events-none absolute h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cream/25 animate-ping"
+          style={{ left: ripple.x, top: ripple.y }}
+        />
+      )}
+      <span className="relative z-10 flex items-center gap-2">{children}</span>
+    </button>
+  );
 }
 
-export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn('h-11 w-full rounded-xl border border-line bg-ink/60 px-3.5 text-sm text-white outline-none transition placeholder:text-muted/70 focus:border-cyan/60 focus:ring-2 focus:ring-cyan/10', className)} {...props} />;
+// Input field with glass styling
+export function Input({
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input
+      className={cn(
+        'h-11 w-full rounded-xl border border-cosmic bg-[rgba(24,0,24,0.65)] px-3.5 text-xs text-cream outline-none transition-all duration-200 placeholder:text-muted/60 focus:border-rose/60 focus:ring-2 focus:ring-rose/20',
+        className
+      )}
+      {...props}
+    />
+  );
 }
 
-export function Select({ className, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={cn('h-11 w-full rounded-xl border border-line bg-ink/60 px-3.5 text-sm text-white outline-none transition focus:border-cyan/60 focus:ring-2 focus:ring-cyan/10', className)} {...props} />;
+// Select dropdown with glass styling
+export function Select({
+  className,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select
+      className={cn(
+        'h-11 w-full rounded-xl border border-cosmic bg-[#180018] px-3.5 text-xs text-cream outline-none transition-all duration-200 focus:border-rose/60 focus:ring-2 focus:ring-rose/20 cursor-pointer',
+        className
+      )}
+      {...props}
+    />
+  );
 }
 
-export function ProgressBar({ value, tone = 'cyan' }: { value: number; tone?: 'cyan' | 'amber' | 'blue' }) {
-  const colors = { cyan: 'bg-cyan', amber: 'bg-amber', blue: 'bg-blue' };
-  return <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.07]"><div className={cn('h-full rounded-full transition-all', colors[tone])} style={{ width: `${Math.max(0, Math.min(100, value))}%` }} /></div>;
+// Animated Progress Bar
+export function ProgressBar({
+  value,
+  tone = 'rose',
+}: {
+  value: number;
+  tone?: 'rose' | 'amber' | 'mauve' | 'cyan';
+}) {
+  const normalizedTone = tone === 'cyan' ? 'rose' : tone;
+  const colors: Record<string, string> = {
+    rose: 'bg-rose shadow-[0_0_12px_#D1A9A7]',
+    amber: 'bg-amber shadow-[0_0_12px_#F3A65B]',
+    mauve: 'bg-mauve',
+  };
+
+  const clamped = Math.max(0, Math.min(100, value));
+
+  return (
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-cosmic/40">
+      <div
+        className={cn('h-full rounded-full transition-all duration-700 ease-out', colors[normalizedTone] || colors.rose)}
+        style={{ width: `${clamped}%` }}
+      />
+    </div>
+  );
 }
 
-export function EmptyState({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
-  return <div className="rounded-2xl border border-dashed border-line bg-ink/30 px-6 py-10 text-center"><p className="text-sm font-semibold text-white">{title}</p><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted">{body}</p>{action ? <div className="mt-5 flex justify-center">{action}</div> : null}</div>;
+// Empty state placeholder
+export function EmptyState({
+  title,
+  body,
+  action,
+}: {
+  title: string;
+  body: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="rounded-[24px] border border-dashed border-cosmic/70 bg-[rgba(36,16,47,0.35)] p-8 sm:p-12 text-center backdrop-blur-xl">
+      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-rose/20 bg-rose/10 text-rose">
+        ✦
+      </div>
+      <p className="font-display text-base font-semibold text-cream">{title}</p>
+      <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-muted">
+        {body}
+      </p>
+      {action && <div className="mt-6 flex justify-center">{action}</div>}
+    </div>
+  );
 }

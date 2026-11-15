@@ -1,50 +1,116 @@
 'use client';
 
-import Link from 'next/link';
+import React, { useState, useEffect, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
-import { Activity, BookOpen, ChartNoAxesCombined, ChevronRight, CircleHelp, FlaskConical, Flame, LayoutDashboard, Scale, ShieldCheck } from 'lucide-react';
+import { motion, useScroll, useSpring } from 'framer-motion';
+import { Activity, Search, Command } from 'lucide-react';
+import { Sidebar, navItems } from '@/components/sidebar';
+import { MobileDock } from '@/components/mobile-dock';
+import { CommandPalette } from '@/components/command-palette';
 import { IgnisMark } from '@/components/icons';
-import { cn } from '@/components/ui';
-
-const navItems = [
-  { href: '/', label: 'Overview', icon: LayoutDashboard },
-  { href: '/research', label: 'Research Explorer', icon: BookOpen },
-  { href: '/lab', label: 'Data Laboratory', icon: FlaskConical },
-  { href: '/compare', label: 'Comparison Studio', icon: Scale },
-  { href: '/assistant', label: 'AI Assistant', icon: CircleHelp },
-  { href: '/safety', label: 'Fire Safety', icon: ShieldCheck },
-  { href: '/visualize', label: 'Visualization Studio', icon: ChartNoAxesCombined },
-];
+import { PageTransition } from '@/components/page-transition';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const active = navItems.find((item) => item.href === pathname);
+  const [isCommandOpen, setIsCommandOpen] = useState(false);
+
+  // Global Ctrl+K / Cmd+K shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCommandOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Top scroll-progress bar
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 300,
+    damping: 30,
+    restDelta: 0.001,
+  });
+
+  const activeItem = navItems.find((item) => item.href === pathname);
+
   return (
-    <div className="min-h-screen bg-ink text-slate-100">
-      <div className="pointer-events-none fixed inset-0 starfield opacity-40" />
-      <div className="pointer-events-none fixed inset-0 cosmic-wash" />
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] border-r border-line/70 bg-ink/90 px-4 py-5 backdrop-blur-xl lg:flex lg:flex-col">
-        <div className="px-3"><IgnisMark /></div>
-        <div className="mt-12 px-3"><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">Mission modules</p></div>
-        <nav className="mt-3 space-y-1" aria-label="Primary navigation">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href;
-            return <Link key={item.href} href={item.href} className={cn('group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition', isActive ? 'border-cyan/20 bg-cyan/10 text-white shadow-glow' : 'border-transparent text-muted hover:border-line hover:bg-white/[0.03] hover:text-white')}><Icon className={cn('h-4 w-4', isActive ? 'text-cyan' : 'text-muted group-hover:text-slate-200')} /><span className="flex-1">{item.label}</span>{isActive ? <ChevronRight className="h-3.5 w-3.5 text-cyan" /> : null}</Link>;
-          })}
-        </nav>
-        <div className="mt-auto rounded-2xl border border-line bg-panel/70 p-4 shadow-glow"><div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,.8)]" /><span className="font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-300">Local mode ready</span></div><p className="mt-3 text-xs leading-5 text-muted">Source records and analysis tools remain available without an account, database or AI key.</p></div>
-      </aside>
+    <div className="relative min-h-screen bg-void text-cream selection:bg-rose/30 selection:text-cream">
+      {/* Thin Rose Scroll-Progress Bar at Top */}
+      <motion.div
+        className="fixed top-0 left-0 right-0 z-50 h-[2px] origin-left bg-gradient-to-r from-rose via-amber to-rose shadow-[0_0_8px_#D1A9A7]"
+        style={{ scaleX }}
+      />
 
-      <main className="relative min-h-screen lg:pl-[248px]">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-line/60 bg-ink/85 px-5 backdrop-blur-xl lg:px-10"><div className="flex items-center gap-3 lg:hidden"><IgnisMark compact /><span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted">{active?.label ?? 'Overview'}</span></div><div className="hidden items-center gap-3 lg:flex"><Activity className="h-4 w-4 text-cyan" /><span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">ISS combustion intelligence / local evidence mode</span></div><div className="flex items-center gap-3"><span className="hidden font-mono text-[10px] uppercase tracking-[0.16em] text-muted sm:block">System status</span><span className="h-2 w-2 animate-pulse rounded-full bg-cyan" /><span className="font-mono text-[10px] text-cyan">NOMINAL</span></div></header>
-        <div className="mx-auto max-w-[1440px] px-5 py-8 pb-28 lg:px-10 lg:py-10 lg:pb-10">{children}</div>
-      </main>
+      {/* Desktop Floating Sidebar */}
+      <Sidebar />
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex overflow-x-auto border-t border-line/80 bg-ink/95 px-3 py-2 backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">
-        {navItems.map((item) => { const Icon = item.icon; const isActive = pathname === item.href; return <Link key={item.href} href={item.href} className={cn('flex min-w-[82px] flex-1 flex-col items-center gap-1 rounded-lg py-2 text-[9px] font-medium', isActive ? 'bg-cyan/10 text-cyan' : 'text-muted')}><Icon className="h-4 w-4" /><span>{item.label.replace(' Studio', '')}</span></Link>; })}
-      </nav>
+      {/* Command Palette Modal */}
+      <CommandPalette
+        isOpen={isCommandOpen}
+        onClose={() => setIsCommandOpen(false)}
+      />
+
+      {/* Main Content Area */}
+      <div className="relative min-h-screen lg:pl-[280px]">
+        {/* Floating Top Bar */}
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-rose/10 bg-[rgba(24,0,24,0.7)] px-5 backdrop-blur-2xl lg:px-10">
+          {/* Mobile Mark & Title */}
+          <div className="flex items-center gap-3 lg:hidden">
+            <IgnisMark compact />
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+              {activeItem?.label ?? 'Overview'}
+            </span>
+          </div>
+
+          {/* Desktop Mission Telemetry */}
+          <div className="hidden items-center gap-3 lg:flex">
+            <Activity className="h-4 w-4 text-rose" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
+              ISS COMBUSTION INTELLIGENCE / LOCAL EVIDENCE MODE
+            </span>
+          </div>
+
+          {/* Right Controls: Command Palette Trigger & System Status */}
+          <div className="flex items-center gap-4">
+            {/* Command Palette Trigger Button */}
+            <button
+              onClick={() => setIsCommandOpen(true)}
+              className="group flex items-center gap-2 rounded-xl border border-cosmic/70 bg-[rgba(36,16,47,0.5)] px-3 py-1.5 text-xs text-muted shadow-glass-highlight transition-all duration-200 hover:border-rose/40 hover:bg-rose/10 hover:text-cream"
+              aria-label="Open command palette"
+            >
+              <Search className="h-3.5 w-3.5 text-rose" />
+              <span className="hidden sm:inline font-mono text-[10px] uppercase tracking-wider">
+                Quick jump / Search
+              </span>
+              <kbd className="flex items-center gap-0.5 rounded border border-cosmic bg-void/60 px-1.5 py-0.5 font-mono text-[9px] uppercase text-rose">
+                <Command className="h-2.5 w-2.5" /> K
+              </kbd>
+            </button>
+
+            {/* System Status Readout */}
+            <div className="flex items-center gap-2.5 rounded-full border border-cosmic/60 bg-void/50 px-3 py-1 shadow-glass-highlight">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-rose shadow-[0_0_8px_#D1A9A7]" />
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-rose font-medium">
+                NOMINAL
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content Container with Smooth Transition */}
+        <main className="mx-auto max-w-[1440px] px-4 py-8 pb-32 sm:px-6 lg:px-10 lg:py-10 lg:pb-16">
+          <PageTransition key={pathname}>{children}</PageTransition>
+        </main>
+      </div>
+
+      {/* Mobile Floating Bottom Dock */}
+      <MobileDock />
     </div>
   );
 }

@@ -1,60 +1,490 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import { AlertTriangle, BarChart3, CheckCircle2, Download, Info, RotateCcw, Table2, UploadCloud } from 'lucide-react';
+import {
+  AlertTriangle,
+  BarChart3,
+  CheckCircle2,
+  Download,
+  Info,
+  RotateCcw,
+  Table2,
+  UploadCloud,
+  FileSpreadsheet,
+  ArrowUpDown,
+  FileText,
+  Activity,
+} from 'lucide-react';
 import { TelemetryChart } from '@/components/charts';
 import { SectionHeader } from '@/components/section-header';
-import { Badge, Button, Card, CardContent, CardHeader, Input, Select } from '@/components/ui';
-import { csvFromRows, detectColumn, parseCsv, toChartRows, type ParsedDataset } from '@/lib/data-utils';
+import { Badge, Button, Input, Select } from '@/components/ui';
+import { GlassCard } from '@/components/glass-card';
+import {
+  csvFromRows,
+  detectColumn,
+  parseCsv,
+  toChartRows,
+  type ParsedDataset,
+} from '@/lib/data-utils';
 
 const sampleCsv = `time_s,temperature_k,flame_radius_mm,oxygen_pct\n0,410,2.4,21.0\n5,660,3.3,20.4\n10,910,4.2,19.7\n15,1130,5.0,19.1\n20,1270,5.7,18.6\n25,1320,6.1,18.2\n30,1335,6.2,17.9\n35,1324,6.1,17.7\n40,1302,5.9,17.5`;
 const initialDataset = parseCsv(sampleCsv, 'Synthetic demonstration CSV');
-
-function Stat({ label, value, detail }: { label: string; value: string; detail: string }) { return <div className="rounded-xl border border-line bg-ink/35 p-3"><p className="font-mono text-[9px] uppercase tracking-[0.16em] text-muted/70">{label}</p><p className="mt-2 text-xl font-semibold text-white">{value}</p><p className="mt-1 text-[10px] text-muted">{detail}</p></div>; }
 
 export default function LabPage() {
   const [dataset, setDataset] = useState<ParsedDataset>(initialDataset);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('');
+  const [activeTab, setActiveTab] = useState<'preview' | 'statistics' | 'charts' | 'export'>('preview');
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortAsc, setSortAsc] = useState(true);
+  const [isDragOver, setIsDragOver] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
-  const numericColumns = dataset.columnsInfo.filter((column) => column.kind === 'numeric').map((column) => column.name);
-  const xDefault = detectColumn(dataset.columns, ['time', 'duration', 'frame', 'step']) ?? numericColumns[0];
-  const yDefault = detectColumn(dataset.columns, ['temperature', 'radius', 'oxygen', 'heat']) ?? numericColumns[1];
+
+  const numericColumns = dataset.columnsInfo
+    .filter((column) => column.kind === 'numeric')
+    .map((column) => column.name);
+
+  const xDefault =
+    detectColumn(dataset.columns, ['time', 'duration', 'frame', 'step']) ??
+    numericColumns[0];
+  const yDefault =
+    detectColumn(dataset.columns, ['temperature', 'radius', 'oxygen', 'heat']) ??
+    numericColumns[1];
+
   const [xColumn, setXColumn] = useState<string | undefined>(xDefault);
   const [yColumn, setYColumn] = useState<string | undefined>(yDefault);
-  const visibleRows = useMemo(() => dataset.rows.filter((row) => !filter || Object.values(row).some((value) => String(value ?? '').toLowerCase().includes(filter.toLowerCase()))), [dataset.rows, filter]);
-  const chartData = toChartRows(visibleRows, xColumn, yColumn).map((row) => ({ x: row.x, y: row.y }));
+
+  // Sorting and filtering
+  const visibleRows = useMemo(() => {
+    let result = dataset.rows.filter(
+      (row) =>
+        !filter ||
+        Object.values(row).some((val) =>
+          String(val ?? '').toLowerCase().includes(filter.toLowerCase())
+        )
+    );
+
+    if (sortColumn) {
+      result = [...result].sort((a, b) => {
+        const valA = a[sortColumn];
+        const valB = b[sortColumn];
+        if (valA === valB) return 0;
+        if (valA === null) return 1;
+        if (valB === null) return -1;
+        if (typeof valA === 'number' && typeof valB === 'number') {
+          return sortAsc ? valA - valB : valB - valA;
+        }
+        return sortAsc
+          ? String(valA).localeCompare(String(valB))
+          : String(valB).localeCompare(String(valA));
+      });
+    }
+
+    return result;
+  }, [dataset.rows, filter, sortColumn, sortAsc]);
+
+  const chartData = toChartRows(visibleRows, xColumn, yColumn).map((row) => ({
+    x: row.x,
+    y: row.y,
+  }));
+
+  function handleSort(col: string) {
+    if (sortColumn === col) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortColumn(col);
+      setSortAsc(true);
+    }
+  }
 
   function loadDataset(text: string, label: string) {
     const next = parseCsv(text, label);
-    if (next.columns.length === 0 || next.rows.length === 0) { setError('The CSV needs a header row and at least one data row.'); return; }
-    setError(''); setDataset(next); setFilter('');
-    const nextNumeric = next.columnsInfo.filter((column) => column.kind === 'numeric').map((column) => column.name);
-    setXColumn(detectColumn(next.columns, ['time', 'duration', 'frame', 'step']) ?? nextNumeric[0]);
-    setYColumn(detectColumn(next.columns, ['temperature', 'radius', 'oxygen', 'heat']) ?? nextNumeric[1]);
+    if (next.columns.length === 0 || next.rows.length === 0) {
+      setError('The CSV needs a header row and at least one data row.');
+      return;
+    }
+    setError('');
+    setDataset(next);
+    setFilter('');
+    const nextNumeric = next.columnsInfo
+      .filter((column) => column.kind === 'numeric')
+      .map((column) => column.name);
+    setXColumn(
+      detectColumn(next.columns, ['time', 'duration', 'frame', 'step']) ??
+        nextNumeric[0]
+    );
+    setYColumn(
+      detectColumn(next.columns, ['temperature', 'radius', 'oxygen', 'heat']) ??
+        nextNumeric[1]
+    );
   }
 
-  async function onFile(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { setError('For safe browser analysis, CSV files are limited to 2 MB.'); return; }
+  async function handleFile(file: File) {
+    if (file.size > 2 * 1024 * 1024) {
+      setError('For safe client-side processing, CSV files are limited to 2 MB.');
+      return;
+    }
     loadDataset(await file.text(), file.name);
   }
 
-  function downloadCsv() {
-    const blob = new Blob([csvFromRows(dataset.columns, visibleRows)], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'ignis-analysis.csv'; anchor.click(); URL.revokeObjectURL(url);
+  function onFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
   }
 
-  return <>
-    <SectionHeader eyebrow="03 / analysis bay" title="Combustion Data Lab" description="Upload a CSV, inspect its structure and plot only the columns that actually exist. The default sample is synthetic so the workflow is usable without NASA credentials or a database." status="Browser analysis" action={<><input ref={inputRef} onChange={onFile} type="file" accept=".csv,text/csv" aria-label="Upload CSV file" className="sr-only" /><Button onClick={() => inputRef.current?.click()}><UploadCloud className="h-4 w-4" /> Upload CSV</Button></>} />
-    {error ? <div role="alert" className="mb-5 flex items-center gap-3 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-100"><Info className="h-4 w-4 shrink-0" />{error}</div> : null}
-    <div className="mb-5 flex flex-wrap items-center gap-2"><Badge tone="amber"><Info className="h-3 w-3" />{dataset.sourceLabel}</Badge><span className="text-xs text-muted">No upload leaves the browser; parsing is local.</span><Button variant="ghost" className="ml-auto min-h-8 px-2.5 text-xs" onClick={() => loadDataset(sampleCsv, 'Synthetic demonstration CSV')}><RotateCcw className="h-3.5 w-3.5" /> Reset sample</Button></div>
-    {dataset.warnings.length > 0 ? <div className="mb-5 rounded-xl border border-amber/25 bg-amber/[0.07] px-4 py-3 text-xs leading-5 text-amber-100"><div className="flex items-center gap-2 font-semibold"><AlertTriangle className="h-4 w-4" /> Parser warnings</div><ul className="mt-2 list-disc space-y-1 pl-5 text-amber-100/75">{dataset.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></div> : null}
-    <section className="grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
-      <Card><CardHeader><div className="flex items-center justify-between gap-3"><div><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Dataset preview</p><h2 className="mt-2 text-lg font-semibold text-white">{dataset.rows.length} rows · {dataset.columns.length} columns</h2></div><Table2 className="h-5 w-5 text-cyan" /></div></CardHeader><CardContent><div className="mb-4 grid gap-3 sm:grid-cols-4"><Stat label="Rows" value={dataset.rows.length.toString()} detail="retained for analysis" /><Stat label="Numeric" value={numericColumns.length.toString()} detail="detected channels" /><Stat label="Missing" value={dataset.columnsInfo.reduce((sum, info) => sum + info.missing, 0).toString()} detail="blank cells" /><Stat label="Invalid" value={dataset.columnsInfo.reduce((sum, info) => sum + info.invalid, 0).toString()} detail="mixed-column cells" /></div><div className="mb-4 flex gap-3"><Input value={filter} onChange={(event) => setFilter(event.target.value)} placeholder="Filter visible rows…" aria-label="Filter dataset rows" /><Button variant="secondary" onClick={downloadCsv}><Download className="h-4 w-4" /> Export</Button></div><div className="scrollbar-thin overflow-x-auto rounded-xl border border-line"><table className="min-w-full text-left text-xs"><thead className="bg-white/[0.04] text-[10px] uppercase tracking-[0.14em] text-muted"><tr>{dataset.columns.map((column) => <th key={column} className="whitespace-nowrap px-3 py-3">{column}</th>)}</tr></thead><tbody className="divide-y divide-line/60">{visibleRows.slice(0, 12).map((row, index) => <tr key={index} className="hover:bg-white/[0.025]">{dataset.columns.map((column) => <td key={column} className="whitespace-nowrap px-3 py-3 font-mono text-slate-300">{row[column] === null ? <span className="text-amber">null</span> : String(row[column])}</td>)}</tr>)}</tbody></table></div>{visibleRows.length > 12 ? <p className="mt-3 text-xs text-muted">Preview shows the first 12 visible rows.</p> : null}</CardContent></Card>
-      <Card><CardHeader><div className="flex items-center justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Relevant visualization</p><h2 className="mt-2 text-lg font-semibold text-white">One signal at a time</h2></div><BarChart3 className="h-5 w-5 text-amber" /></div></CardHeader><CardContent><div className="grid gap-3 sm:grid-cols-2"><div><label htmlFor="lab-x-axis" className="mb-2 block text-xs text-muted">X axis</label><Select id="lab-x-axis" value={xColumn ?? ''} onChange={(event) => setXColumn(event.target.value)}>{numericColumns.map((column) => <option key={column}>{column}</option>)}</Select></div><div><label htmlFor="lab-y-axis" className="mb-2 block text-xs text-muted">Y axis</label><Select id="lab-y-axis" value={yColumn ?? ''} onChange={(event) => setYColumn(event.target.value)}>{numericColumns.map((column) => <option key={column}>{column}</option>)}</Select></div></div><div className="mt-5"><TelemetryChart data={chartData as unknown as Record<string, unknown>[]} xKey="x" lines={[{ key: 'y', label: `${yColumn ?? 'value'} · detected`, color: '#f3b25b' }]} xLabel={xColumn} yLabel={yColumn} /></div><p className="mt-2 text-[11px] leading-5 text-muted">IGNIS does not invent a series when a relevant column is absent. Use the selectors to inspect documented columns.</p></CardContent></Card>
-    </section>
-    <Card className="mt-5"><CardHeader><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Validation readout</p><h2 className="mt-2 text-lg font-semibold text-white">Column quality</h2></CardHeader><CardContent><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">{dataset.columnsInfo.map((info) => <div key={info.name} className="rounded-xl border border-line bg-ink/35 p-3"><div className="flex items-center justify-between gap-3"><span className="truncate font-mono text-xs text-white">{info.name}</span>{info.missing === 0 && info.invalid === 0 ? <CheckCircle2 className="h-4 w-4 text-emerald-300" /> : <span className="font-mono text-[10px] text-amber">{info.missing > 0 ? `${info.missing} missing` : `${info.invalid} invalid`}</span>}</div><p className="mt-2 text-[10px] uppercase tracking-[0.15em] text-muted">{info.kind} column</p>{info.kind === 'numeric' ? <p className="mt-2 font-mono text-[10px] text-muted">mean {info.mean?.toFixed(2)} · {info.min}–{info.max}</p> : info.kind === 'mixed' ? <p className="mt-2 font-mono text-[10px] text-amber/80">numeric charts exclude text cells</p> : null}</div>)}</div></CardContent></Card>
-  </>;
+  function downloadCsv() {
+    const blob = new Blob([csvFromRows(dataset.columns, visibleRows)], {
+      type: 'text/csv;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'ignis-analysis.csv';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="space-y-8">
+      <SectionHeader
+        eyebrow="03 / analysis bay"
+        title="Combustion Data Laboratory"
+        description="Ingest observation CSVs, diagnose telemetry columns, and plot signals without data leaving your browser sandbox. The default dataset is an illustrative microgravity baseline."
+        status="Browser Analysis"
+        action={
+          <div className="flex gap-2">
+            <input
+              ref={inputRef}
+              onChange={onFileInput}
+              type="file"
+              accept=".csv,text/csv"
+              aria-label="Upload CSV file"
+              className="sr-only"
+            />
+            <Button onClick={() => inputRef.current?.click()} variant="primary">
+              <UploadCloud className="h-4 w-4" /> Upload CSV
+            </Button>
+          </div>
+        }
+      />
+
+      {/* Error alert */}
+      {error && (
+        <div
+          role="alert"
+          className="flex items-center gap-3 rounded-2xl border border-amber/40 bg-amber/15 px-5 py-3 text-sm text-amber shadow-[0_0_20px_rgba(243,166,91,0.2)]"
+        >
+          <Info className="h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Source Banner & Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose/15 bg-[rgba(36,16,47,0.5)] p-4 backdrop-blur-xl">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone="amber">
+            <Info className="h-3 w-3" /> {dataset.sourceLabel}
+          </Badge>
+          <span className="font-mono text-xs text-muted">
+            All parsing is strictly offline and private to this device.
+          </span>
+        </div>
+        <Button
+          variant="ghost"
+          className="min-h-8 text-xs text-rose hover:text-cream"
+          onClick={() => loadDataset(sampleCsv, 'Synthetic demonstration CSV')}
+        >
+          <RotateCcw className="h-3.5 w-3.5" /> Reset synthetic sample
+        </Button>
+      </div>
+
+      {/* Docking Port Drag-and-Drop Zone */}
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragOver(true);
+        }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragOver(false);
+          const file = e.dataTransfer.files[0];
+          if (file) handleFile(file);
+        }}
+        onClick={() => inputRef.current?.click()}
+        className={`relative flex flex-col items-center justify-center cursor-pointer rounded-[28px] border-2 border-dashed p-8 text-center transition-all duration-300 ${
+          isDragOver
+            ? 'border-rose bg-rose/10 shadow-[0_0_40px_rgba(209,169,167,0.35)] scale-[1.01]'
+            : 'border-cosmic bg-[rgba(36,16,47,0.35)] hover:border-rose/50 hover:bg-rose/[0.04]'
+        }`}
+      >
+        {/* Pulsing Concentric Rings */}
+        <div className="relative mb-4 flex h-20 w-20 items-center justify-center">
+          <div className="absolute inset-0 rounded-full border border-rose/20 animate-ping opacity-50" />
+          <div className="absolute inset-2 rounded-full border border-cosmic animate-pulse" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-rose/40 bg-rose/15 text-rose">
+            <UploadCloud className="h-6 w-6" />
+          </div>
+        </div>
+
+        <p className="font-display text-base font-bold text-cream">
+          CSV Analysis Docking Port
+        </p>
+        <p className="mt-1 max-w-sm text-xs text-muted">
+          Drag and drop your experiment CSV file here, or click to browse. Max size 2 MB.
+        </p>
+        <span className="mt-3 rounded border border-cosmic bg-void/60 px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-rose">
+          Standard RFC 4180 CSV Compliant
+        </span>
+      </div>
+
+      {/* Tabs Navigation: Preview / Statistics / Charts / Export */}
+      <div className="flex border-b border-cosmic/70 pb-1 gap-2">
+        {(
+          [
+            { id: 'preview', label: 'Preview Table', icon: Table2 },
+            { id: 'statistics', label: 'Diagnostics & Stats', icon: Activity },
+            { id: 'charts', label: 'Telemetry Plot', icon: BarChart3 },
+            { id: 'export', label: 'Export Suite', icon: Download },
+          ] as const
+        ).map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 font-mono text-xs uppercase tracking-wider transition-all ${
+                isActive
+                  ? 'border border-rose/30 bg-rose/15 text-cream font-semibold shadow-[0_0_12px_rgba(209,169,167,0.2)]'
+                  : 'text-muted hover:text-cream'
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5 text-rose" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tab 1: Preview Table */}
+      {activeTab === 'preview' && (
+        <GlassCard tier="raised" className="p-6">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="font-display text-base font-bold text-cream">
+                {dataset.rows.length} rows · {dataset.columns.length} columns
+              </span>
+              <Badge tone="rose">{visibleRows.length} visible</Badge>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                placeholder="Filter row contents..."
+                className="max-w-xs text-xs"
+              />
+              <Button variant="secondary" onClick={downloadCsv}>
+                <Download className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="scrollbar-thin overflow-x-auto rounded-2xl border border-cosmic">
+            <table className="min-w-full text-left text-xs">
+              <thead className="bg-void/60 text-[10px] uppercase tracking-wider text-muted font-mono sticky top-0">
+                <tr>
+                  {dataset.columns.map((column) => (
+                    <th
+                      key={column}
+                      onClick={() => handleSort(column)}
+                      className="cursor-pointer whitespace-nowrap px-4 py-3 hover:text-cream transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>{column}</span>
+                        <ArrowUpDown className="h-3 w-3 text-rose/60" />
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-cosmic/50 font-mono">
+                {visibleRows.slice(0, 15).map((row, idx) => (
+                  <tr key={idx} className="hover:bg-rose/[0.03] transition-colors">
+                    {dataset.columns.map((col) => (
+                      <td key={col} className="whitespace-nowrap px-4 py-3 text-cream/90">
+                        {row[col] === null ? (
+                          <span className="text-amber">null</span>
+                        ) : (
+                          String(row[col])
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {visibleRows.length > 15 && (
+            <p className="mt-3 text-right font-mono text-[10px] text-muted">
+              Displaying first 15 rows of {visibleRows.length} filtered entries.
+            </p>
+          )}
+        </GlassCard>
+      )}
+
+      {/* Tab 2: Statistics & Column Diagnostics */}
+      {activeTab === 'statistics' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <GlassCard tier="raised" className="p-4 text-center">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-muted">
+                Total Rows
+              </span>
+              <p className="mt-2 font-display text-2xl font-bold text-cream">
+                {dataset.rows.length}
+              </p>
+            </GlassCard>
+            <GlassCard tier="raised" className="p-4 text-center">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-muted">
+                Numeric Channels
+              </span>
+              <p className="mt-2 font-display text-2xl font-bold text-rose">
+                {numericColumns.length}
+              </p>
+            </GlassCard>
+            <GlassCard tier="raised" className="p-4 text-center">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-muted">
+                Missing Values
+              </span>
+              <p className="mt-2 font-display text-2xl font-bold text-amber">
+                {dataset.columnsInfo.reduce((sum, col) => sum + col.missing, 0)}
+              </p>
+            </GlassCard>
+            <GlassCard tier="raised" className="p-4 text-center">
+              <span className="font-mono text-[9px] uppercase tracking-wider text-muted">
+                Invalid / Mixed
+              </span>
+              <p className="mt-2 font-display text-2xl font-bold text-muted">
+                {dataset.columnsInfo.reduce((sum, col) => sum + col.invalid, 0)}
+              </p>
+            </GlassCard>
+          </div>
+
+          <GlassCard tier="raised" className="p-6">
+            <h3 className="font-display text-base font-bold text-cream mb-4">
+              Column Integrity Diagnostics
+            </h3>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {dataset.columnsInfo.map((info) => (
+                <div
+                  key={info.name}
+                  className="rounded-2xl border border-cosmic bg-void/50 p-4"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-mono text-xs font-semibold text-cream">
+                      {info.name}
+                    </span>
+                    {info.missing === 0 && info.invalid === 0 ? (
+                      <CheckCircle2 className="h-4 w-4 text-rose" />
+                    ) : (
+                      <span className="font-mono text-[10px] text-amber">
+                        {info.missing > 0 ? `${info.missing} missing` : `${info.invalid} invalid`}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <span className="rounded bg-rose/10 px-1.5 py-0.5 font-mono text-[9px] uppercase text-rose">
+                      {info.kind}
+                    </span>
+                  </div>
+                  {info.kind === 'numeric' && (
+                    <div className="mt-2 font-mono text-[10px] text-muted">
+                      Mean: {info.mean?.toFixed(2)} · Range: [{info.min} - {info.max}]
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* Tab 3: Charts */}
+      {activeTab === 'charts' && (
+        <GlassCard tier="raised" className="p-6">
+          <div className="mb-6 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="lab-x-axis" className="mb-1 block font-mono text-[10px] uppercase text-muted">
+                X Axis (Independent Variable)
+              </label>
+              <Select
+                id="lab-x-axis"
+                value={xColumn ?? ''}
+                onChange={(e) => setXColumn(e.target.value)}
+              >
+                {numericColumns.map((col) => (
+                  <option key={col} value={col}>
+                    {col}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="lab-y-axis" className="mb-1 block font-mono text-[10px] uppercase text-muted">
+                Y Axis (Observed Signal)
+              </label>
+              <Select
+                id="lab-y-axis"
+                value={yColumn ?? ''}
+                onChange={(e) => setYColumn(e.target.value)}
+              >
+                {numericColumns.map((col) => (
+                  <option key={col} value={col}>
+                    {col}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+
+          <TelemetryChart
+            data={chartData as unknown as Record<string, unknown>[]}
+            xKey="x"
+            xLabel={xColumn}
+            yLabel={yColumn}
+            lines={[
+              {
+                key: 'y',
+                label: `${yColumn ?? 'value'} · detected`,
+                color: '#F3A65B',
+              },
+            ]}
+            height={340}
+          />
+        </GlassCard>
+      )}
+
+      {/* Tab 4: Export Suite */}
+      {activeTab === 'export' && (
+        <GlassCard tier="raised" className="p-8 text-center max-w-xl mx-auto">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-rose/30 bg-rose/10 text-rose mb-4">
+            <Download className="h-7 w-7" />
+          </div>
+          <h3 className="font-display text-lg font-bold text-cream">
+            Export Processed Experiment Data
+          </h3>
+          <p className="mt-2 text-xs leading-relaxed text-muted">
+            Generate an offline CSV file containing the active filtered dataset and cleaned telemetry columns.
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <Button variant="primary" onClick={downloadCsv} className="min-h-11 px-6">
+              <Download className="h-4 w-4" /> Export CSV ({visibleRows.length} rows)
+            </Button>
+          </div>
+        </GlassCard>
+      )}
+    </div>
+  );
 }

@@ -1,30 +1,268 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Check, ExternalLink, GitCompareArrows, Minus, Plus } from 'lucide-react';
+import {
+  Check,
+  ExternalLink,
+  GitCompareArrows,
+  Minus,
+  Plus,
+  Scale,
+  Layers,
+} from 'lucide-react';
 import { ComparisonChart } from '@/components/charts';
 import { SectionHeader } from '@/components/section-header';
-import { Badge, Button, Card, CardContent, CardHeader } from '@/components/ui';
+import { Badge, Button } from '@/components/ui';
+import { GlassCard } from '@/components/glass-card';
 import { researchRecords } from '@/lib/research';
 
-const comparable = researchRecords.filter((record) => record.sourceType !== 'NASA overview');
+const comparable = researchRecords.filter(
+  (record) => record.sourceType !== 'NASA overview'
+);
 
 export default function ComparePage() {
-  const [selected, setSelected] = useState<string[]>(['acme-cfi-g', 'flex', 'saffire']);
-  const records = selected.map((id) => researchRecords.find((record) => record.id === id)).filter((record): record is (typeof researchRecords)[number] => Boolean(record));
-  const parameterData = useMemo(() => records.map((record) => ({ name: record.id.slice(0, 10), value: record.parameters.length })), [records]);
-  function toggle(id: string) { setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length < 4 ? [...current, id] : current); }
+  const [selected, setSelected] = useState<string[]>([
+    'acme-cfi-g',
+    'flex',
+    'saffire',
+  ]);
 
-  return <>
-    <SectionHeader eyebrow="04 / comparison bay" title="Experiment Comparison Studio" description="Select up to four records. IGNIS compares the parameters documented by the source record and leaves unreported measurements blank rather than filling them with assumptions." status="Documented fields only" />
-    <section className="grid gap-5 xl:grid-cols-[320px_1fr]">
-      <Card className="h-fit"><CardHeader><div className="flex items-center justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Selection</p><h2 className="mt-2 text-lg font-semibold text-white">Choose records</h2></div><Badge tone="amber">{selected.length}/4</Badge></div></CardHeader><CardContent className="space-y-2">{comparable.map((record) => { const isSelected = selected.includes(record.id); return <button key={record.id} onClick={() => toggle(record.id)} className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition ${isSelected ? 'border-cyan/30 bg-cyan/10' : 'border-line bg-ink/30 hover:border-cyan/20'}`}><span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border ${isSelected ? 'border-cyan bg-cyan text-ink' : 'border-line text-muted'}`}>{isSelected ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}</span><span className="min-w-0"><span className="block truncate text-xs font-semibold text-white">{record.title}</span><span className="mt-1 block truncate text-[10px] text-muted">{record.sourceOrg}</span></span></button>; })}<p className="pt-3 text-[11px] leading-5 text-muted">The comparison uses source-described variables such as fuel, oxygen conditions, flame characteristics and measurement method. It does not imply the experiments are directly interchangeable.</p></CardContent></Card>
-      <div className="space-y-5">
-        {records.length === 0 ? <Card><CardContent className="py-14 text-center"><GitCompareArrows className="mx-auto h-7 w-7 text-muted" /><p className="mt-4 text-sm font-semibold text-white">Select at least one record</p></CardContent></Card> : <>
-          <Card><CardHeader><div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Parameter matrix</p><h2 className="mt-2 text-lg font-semibold text-white">What the sources actually document</h2></div><Badge tone="green">{records.length} records</Badge></div></CardHeader><CardContent><div className="scrollbar-thin overflow-x-auto"><table className="min-w-[700px] w-full text-left text-xs"><thead><tr className="border-b border-line text-[10px] uppercase tracking-[0.14em] text-muted"><th className="px-3 py-3 font-normal">Documented field</th>{records.map((record) => <th key={record.id} className="max-w-[180px] px-3 py-3 font-normal text-cyan">{record.title}</th>)}</tr></thead><tbody className="divide-y divide-line/60">{['Source organisation', 'Category', 'Availability', 'Date', 'Parameters', 'Limitation'].map((field) => <tr key={field}><td className="px-3 py-4 font-mono text-[10px] uppercase tracking-[0.12em] text-muted">{field}</td>{records.map((record) => <td key={record.id} className="px-3 py-4 align-top leading-5 text-slate-200">{field === 'Source organisation' ? record.sourceOrg : field === 'Category' ? <Badge tone="cyan">{record.category}</Badge> : field === 'Availability' ? record.availability : field === 'Date' ? record.date ?? <span className="text-muted/60">Not stated</span> : field === 'Parameters' ? <div className="flex flex-wrap gap-1.5">{record.parameters.map((parameter) => <span key={parameter} className="rounded-md border border-line bg-white/[0.03] px-2 py-1 text-[10px] text-muted">{parameter}</span>)}</div> : record.limitation}</td>)}</tr>)}</tbody></table></div></CardContent></Card>
-          <div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]"><Card><CardHeader><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Interpretation</p><h2 className="mt-2 text-lg font-semibold text-white">Similarities &amp; differences</h2></CardHeader><CardContent className="space-y-3 text-sm leading-6 text-muted"><p><Check className="mr-2 inline h-4 w-4 text-emerald-300" />All selected records connect to combustion or spacecraft fire-safety questions and expose a source reference.</p><p><Minus className="mr-2 inline h-4 w-4 text-amber" />They differ in objective: cool flames, suppression, spacecraft demonstrations and smoke measurement are not the same experiment class.</p><p><GitCompareArrows className="mr-2 inline h-4 w-4 text-cyan" />The bar chart counts documented parameter labels as a transparency cue. It is not a scientific performance score.</p>{records.map((record) => <a key={record.id} href={record.sourceUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs font-semibold text-cyan hover:text-white"><ExternalLink className="h-3.5 w-3.5" /> {record.citation}</a>)}</CardContent></Card><Card><CardHeader><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Parameter coverage</p><h2 className="mt-2 text-lg font-semibold text-white">Documented fields per record</h2></CardHeader><CardContent><ComparisonChart data={parameterData} dataKey="value" label="Documented parameters" /><p className="mt-2 text-[11px] leading-5 text-muted">A higher bar means more descriptive fields are present in the local source record. It does not mean a better experiment.</p></CardContent></Card></div>
-        </>}
+  const records = selected
+    .map((id) => researchRecords.find((r) => r.id === id))
+    .filter((r): r is (typeof researchRecords)[number] => Boolean(r));
+
+  const parameterData = useMemo(
+    () =>
+      records.map((record) => ({
+        name: record.id.slice(0, 12),
+        value: record.parameters.length,
+      })),
+    [records]
+  );
+
+  function toggle(id: string) {
+    setSelected((curr) =>
+      curr.includes(id)
+        ? curr.filter((item) => item !== id)
+        : curr.length < 4
+        ? [...curr, id]
+        : curr
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <SectionHeader
+        eyebrow="04 / comparison bay"
+        title="Experiment Comparison Studio"
+        description="Select up to four flight experiments or investigations. IGNIS places verified source parameters side-by-side, surfacing distinct testing regimes without synthesizing missing experimental variables."
+        status="Documented Fields Only"
+      />
+
+      <div className="grid gap-6 xl:grid-cols-[340px_1fr]">
+        {/* Record Selection Column */}
+        <GlassCard tier="raised" className="p-6 h-fit">
+          <div className="flex items-center justify-between border-b border-cosmic/60 pb-3">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-rose">
+                Experiment Picker
+              </p>
+              <h3 className="mt-1 font-display text-base font-bold text-cream">
+                Select Investigations
+              </h3>
+            </div>
+            <Badge tone="amber">{selected.length}/4</Badge>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {comparable.map((record) => {
+              const isSelected = selected.includes(record.id);
+              return (
+                <button
+                  key={record.id}
+                  onClick={() => toggle(record.id)}
+                  className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-all duration-200 ${
+                    isSelected
+                      ? 'border-rose/40 bg-rose/15 shadow-[0_0_15px_rgba(209,169,167,0.15)]'
+                      : 'border-cosmic/60 bg-void/40 hover:border-rose/25 hover:bg-rose/5'
+                  }`}
+                >
+                  <span
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border text-xs font-semibold ${
+                      isSelected
+                        ? 'border-rose bg-rose text-void'
+                        : 'border-cosmic text-muted'
+                    }`}
+                  >
+                    {isSelected ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-semibold text-cream">
+                      {record.title}
+                    </span>
+                    <span className="mt-0.5 block truncate font-mono text-[9px] uppercase tracking-wider text-muted">
+                      {record.sourceOrg}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="mt-5 border-t border-cosmic/50 pt-4 text-[11px] leading-relaxed text-muted">
+            Comparisons evaluate documented parameters (fuel type, reactant dilution, flow, suppressant). Different test rigs are not interchangeable.
+          </p>
+        </GlassCard>
+
+        {/* Right Comparison Matrix & Charts */}
+        <div className="space-y-6">
+          {records.length === 0 ? (
+            <GlassCard tier="raised" className="py-16 text-center">
+              <Scale className="mx-auto h-8 w-8 text-rose" />
+              <p className="mt-4 font-display text-base font-semibold text-cream">
+                Select at least one record to initiate comparison
+              </p>
+            </GlassCard>
+          ) : (
+            <>
+              {/* Matrix Table */}
+              <GlassCard tier="raised" className="p-6">
+                <div className="flex items-center justify-between border-b border-cosmic/60 pb-3">
+                  <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-rose">
+                      Parameter Comparison Matrix
+                    </p>
+                    <h3 className="mt-1 font-display text-base font-bold text-cream">
+                      Documented Investigation Specifications
+                    </h3>
+                  </div>
+                  <Badge tone="rose">{records.length} selected</Badge>
+                </div>
+
+                <div className="mt-4 scrollbar-thin overflow-x-auto rounded-2xl border border-cosmic/70">
+                  <table className="min-w-[650px] w-full text-left text-xs">
+                    <thead className="bg-void/60 text-[10px] uppercase tracking-wider text-muted font-mono">
+                      <tr className="border-b border-cosmic/70">
+                        <th className="px-4 py-3 font-semibold w-40">Field</th>
+                        {records.map((r) => (
+                          <th key={r.id} className="px-4 py-3 text-rose font-semibold">
+                            {r.title}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-cosmic/50">
+                      {[
+                        'Source Organisation',
+                        'Category',
+                        'Availability',
+                        'Documented Parameters',
+                        'Limitation Note',
+                      ].map((field) => (
+                        <tr key={field} className="hover:bg-rose/[0.02] transition-colors">
+                          <td className="px-4 py-3.5 font-mono text-[10px] uppercase tracking-wider text-muted font-medium">
+                            {field}
+                          </td>
+                          {records.map((r) => (
+                            <td key={r.id} className="px-4 py-3.5 align-top leading-relaxed text-cream/90">
+                              {field === 'Source Organisation' && r.sourceOrg}
+                              {field === 'Category' && (
+                                <Badge tone="rose">{r.category}</Badge>
+                              )}
+                              {field === 'Availability' && (
+                                <span className="text-amber font-mono text-[10px]">
+                                  {r.availability}
+                                </span>
+                              )}
+                              {field === 'Documented Parameters' && (
+                                <div className="flex flex-wrap gap-1">
+                                  {r.parameters.map((p) => (
+                                    <span
+                                      key={p}
+                                      className="rounded-lg border border-cosmic bg-void/60 px-2 py-0.5 font-mono text-[9px] text-muted"
+                                    >
+                                      {p}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {field === 'Limitation Note' && (
+                                <span className="text-muted text-[11px]">{r.limitation}</span>
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </GlassCard>
+
+              {/* Interpretation and Coverage Chart */}
+              <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+                <GlassCard tier="raised" className="p-6">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-rose">
+                    Analytical Interpretation
+                  </p>
+                  <h3 className="mt-1 font-display text-base font-bold text-cream">
+                    Similarities &amp; Boundaries
+                  </h3>
+
+                  <div className="mt-4 space-y-3 text-xs leading-relaxed text-muted">
+                    <p className="flex items-start gap-2">
+                      <Check className="h-4 w-4 shrink-0 text-rose mt-0.5" />
+                      All selected investigations isolate microgravity combustion transport phenomena by suppressing buoyancy.
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <Minus className="h-4 w-4 shrink-0 text-amber mt-0.5" />
+                      Each mission explores distinct objectives: ACME examines cool flames; FLEX evaluates inert quench; Saffire monitors spacecraft-scale fabric flammability.
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <GitCompareArrows className="h-4 w-4 shrink-0 text-rose mt-0.5" />
+                      The parameter coverage metric indicates documented index density, not relative experimental merit.
+                    </p>
+
+                    <div className="mt-5 border-t border-cosmic/60 pt-3 space-y-2">
+                      {records.map((r) => (
+                        <a
+                          key={r.id}
+                          href={r.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 font-mono text-[10px] text-rose hover:underline"
+                        >
+                          <ExternalLink className="h-3 w-3" /> {r.citation}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </GlassCard>
+
+                <GlassCard tier="raised" className="p-6">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-rose">
+                    Parameter Coverage
+                  </p>
+                  <h3 className="mt-1 font-display text-base font-bold text-cream">
+                    Documented Fields Per Record
+                  </h3>
+
+                  <div className="mt-4">
+                    <ComparisonChart
+                      data={parameterData}
+                      dataKey="value"
+                      label="Documented parameters"
+                      color="#F3A65B"
+                    />
+                  </div>
+                  <p className="mt-2 text-center font-mono text-[9px] uppercase tracking-wider text-muted">
+                    Higher bar indicates greater parameter granularity in the source record
+                  </p>
+                </GlassCard>
+              </div>
+            </>
+          )}
+        </div>
       </div>
-    </section>
-  </>;
+    </div>
+  );
 }

@@ -1,33 +1,317 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, CheckCircle2, Code2, FileText, Github, LockKeyhole, Server, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
+import {
+  ArrowUpRight,
+  CheckCircle2,
+  ChevronDown,
+  Code2,
+  FileText,
+  Github,
+  LockKeyhole,
+  Server,
+  Sparkles,
+  ShieldCheck,
+  Compass,
+} from 'lucide-react';
 import { SectionHeader } from '@/components/section-header';
-import { Badge, Card, CardContent, CardHeader } from '@/components/ui';
+import { Badge, Button } from '@/components/ui';
+import { GlassCard } from '@/components/glass-card';
+
+const timelineEvents = [
+  {
+    phase: 'Phase 01',
+    era: '2016 — 2020',
+    title: 'ISS CIR Microgravity Baselines',
+    desc: 'Deployment of ACME, FLEX and SAME payloads within the Combustion Integrated Rack. Researchers established that buoyancy-free spherical flames suppress flickering and soot convective transport.',
+    badge: 'Orbital Verification',
+  },
+  {
+    phase: 'Phase 02',
+    era: '2021 — 2024',
+    title: 'Enclosure Scale Flammability (Saffire)',
+    desc: 'Uncrewed Cygnus resupply vehicles host large-scale fabric and panel burn tests (Saffire I through VI). Confirmed that low-velocity airflow in microgravity can sustain flame spread across wider oxygen ranges than predicted by 1g drop towers.',
+    badge: 'Spacecraft Scale',
+  },
+  {
+    phase: 'Phase 03',
+    era: '2025 — Present',
+    title: 'Solid Fuel Ignition & Extinction (SoFIE)',
+    desc: 'Active testing of solid materials, composites, and textiles under varied atmospheric pressures and inert-gas blends to support Artemis lunar architecture and gateway habitats.',
+    badge: 'Current Operations',
+  },
+  {
+    phase: 'Phase 04',
+    era: 'Future Horizon',
+    title: 'Partial Gravity Combustion (Lunar & Martian Regimes)',
+    desc: 'Expanding physical models to intermediate gravity: 0.16g (Moon) and 0.38g (Mars), where weak buoyant convection interacts non-linearly with forced ventilation.',
+    badge: 'Deep Space Standards',
+  },
+];
 
 const principles = [
-  ['Research first', 'Source records are curated from NASA pages and repositories. The original URL and a limitation note remain attached to each record.'],
-  ['Synthetic means synthetic', 'The local CSV and chart series are labelled illustrative. They exist to demonstrate analysis, not to imitate NASA measurements.'],
-  ['No unsupported score', 'IGNIS explains qualitative relevance to spacecraft fire safety without producing an invented numerical risk score.'],
-  ['Portable by default', 'The app runs with standard Node.js and npm. Authentication, databases and external AI are optional configuration choices.'],
+  {
+    title: 'Research First & Source Attached',
+    content:
+      'Curated index entries link directly to verified NASA Glenn, NTRS, or PSI repository landing pages. Every item retains its primary citation, publication date, and known experimental boundaries.',
+  },
+  {
+    title: 'Synthetic Means Synthetic',
+    content:
+      'Any synthetic time series or illustrative model is explicitly flagged with Combustion Amber and labeled illustrative. We never fabricate flight telemetry or mask synthetic estimates as real sensor readings.',
+  },
+  {
+    title: 'Zero Unsupported Hazard Scores',
+    content:
+      'IGNIS refrains from generating synthetic "hazard indexes" or emergency forecasting. Spacecraft fire safety is an engineering science; qualitative relevance is communicated with strict integrity.',
+  },
+  {
+    title: 'Portable & Local-First by Default',
+    content:
+      'The entire interface operates without user accounts, cloud tracking, or mandatory AI API keys. Parsing and diagnostics execute client-side inside standard browser environments.',
+  },
 ];
 
 export default function AboutPage() {
-  return <>
-    <SectionHeader eyebrow="08 / mission dossier" title="Methodology & About" description="IGNIS is a portable research interface for making microgravity combustion material easier to discover, inspect and communicate responsibly." status="Export ready" />
-    <section className="grid gap-5 lg:grid-cols-[1fr_.8fr]">
-      <Card><CardHeader><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Why IGNIS exists</p><h2 className="mt-2 text-lg font-semibold text-white">A clearer path from NASA record to research question</h2></CardHeader><CardContent className="space-y-4 text-sm leading-7 text-muted"><p>Combustion in reduced gravity changes the role of buoyancy-driven flow, flame shape, transport and heat transfer. NASA’s combustion science work uses the ISS and other platforms to study phenomena that are difficult to isolate on Earth.</p><p>IGNIS brings those source records into one interface. Its job is not to replace primary research. Its job is to make the boundary between a documented fact, an analysis operation and an illustrative demo visible while a user explores.</p><div className="rounded-xl border border-line bg-ink/35 p-4"><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-cyan">Current scope</p><p className="mt-2 text-sm text-white">{new Date().getFullYear()} local demonstration build · {10} curated NASA-linked records · browser-side analysis · optional server AI adapter</p></div></CardContent></Card>
-      <Card><CardHeader><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Integrity protocol</p><h2 className="mt-2 text-lg font-semibold text-white">Trust is a product feature</h2></CardHeader><CardContent className="space-y-3">{principles.map(([title, text]) => <div key={title} className="flex gap-3"><CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-emerald-300" /><div><p className="text-sm font-semibold text-white">{title}</p><p className="mt-1 text-xs leading-5 text-muted">{text}</p></div></div>)}</CardContent></Card>
-    </section>
-    <section className="mt-5 grid gap-4 md:grid-cols-2">{[
-      { icon: Code2, title: 'Standard stack', text: 'Next.js App Router, React, TypeScript, Tailwind CSS, Recharts and Lucide React.', href: '/docs/ARCHITECTURE.md', badge: 'Open source shape' },
-      { icon: Server, title: 'Independent deployment', text: 'Run npm install, npm run dev and npm run build. Import the repository into Vercel with no Manus service.', href: '#deployment', badge: 'Vercel-ready' },
-      { icon: LockKeyhole, title: 'Optional AI', text: 'Set AI_API_KEY, AI_BASE_URL and AI_MODEL to use an OpenAI-compatible endpoint. Leave blank for fallback mode.', href: '#ai', badge: 'Server only' },
-      { icon: FileText, title: 'Documentation set', text: 'Architecture, methodology, dataset inventory, API, environment, testing, deployment, limitations and presentation outline are included in the repository.', href: '#docs', badge: 'Included' },
-    ].map((item) => { const Icon = item.icon; return <Card key={item.title}><CardContent><div className="flex items-start justify-between gap-4"><div className="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan/20 bg-cyan/10"><Icon className="h-5 w-5 text-cyan" /></div><Badge tone="cyan">{item.badge}</Badge></div><h2 className="mt-5 text-lg font-semibold text-white">{item.title}</h2><p className="mt-2 text-sm leading-6 text-muted">{item.text}</p><a href={item.href} className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-cyan hover:text-white">Read the guide <ArrowUpRight className="h-3.5 w-3.5" /></a></CardContent></Card>; })}</section>
-    <Card className="mt-5"><CardHeader><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Contributor note</p><h2 className="mt-2 text-lg font-semibold text-white">Built for a responsible demonstration</h2></CardHeader><CardContent className="flex flex-col gap-4 text-sm leading-6 text-muted md:flex-row md:items-center md:justify-between"><p className="max-w-2xl">IGNIS acknowledges NASA Glenn Research Center, NASA Physical Sciences Informatics and NASA Technical Reports Server as the source organizations represented in the current index. See the repository documentation for citations and limitations.</p><Link href="/research" className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-line px-3.5 py-2.5 text-sm font-semibold text-white hover:border-cyan/40"><Github className="h-4 w-4 text-cyan" /> Open source index</Link></CardContent></Card>
-    <section className="mt-5 grid gap-4 md:grid-cols-3">
-      <Card id="privacy"><CardHeader><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Privacy & data flow</p><h2 className="mt-2 text-lg font-semibold text-white">No app-added tracking</h2></CardHeader><CardContent className="space-y-3 text-sm leading-6 text-muted"><p>CSV analysis stays in the browser. The source adds no analytics, cookies, accounts, or local-storage persistence.</p><a href="/docs/PRIVACY.md" className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan hover:text-white">Read privacy details <ArrowUpRight className="h-3.5 w-3.5" /></a></CardContent></Card>
-      <Card id="terms"><CardHeader><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Terms & limits</p><h2 className="mt-2 text-lg font-semibold text-white">Research exploration only</h2></CardHeader><CardContent className="space-y-3 text-sm leading-6 text-muted"><p>IGNIS is not a safety certification, emergency prediction, or engineering sign-off system.</p><a href="/docs/TERMS.md" className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan hover:text-white">Read terms <ArrowUpRight className="h-3.5 w-3.5" /></a></CardContent></Card>
-      <Card id="scientific-disclaimer"><CardHeader><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Scientific boundary</p><h2 className="mt-2 text-lg font-semibold text-white">Synthetic means synthetic</h2></CardHeader><CardContent className="space-y-3 text-sm leading-6 text-muted"><p>Illustrative charts are not NASA measurements; documented fields are not inferred values.</p><a href="/docs/SCIENTIFIC-DISCLAIMER.md" className="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan hover:text-white">Read the disclaimer <ArrowUpRight className="h-3.5 w-3.5" /></a></CardContent></Card>
-    </section>
-  </>;
+  const [openAccordion, setOpenAccordion] = useState<number | null>(0);
+
+  return (
+    <div className="space-y-12">
+      <SectionHeader
+        eyebrow="08 / mission dossier"
+        title="Methodology, Architecture & About"
+        description="IGNIS is an evidence-first cockpit designed to bridge NASA microgravity combustion research and modern spaceflight engineering with uncompromising scientific integrity."
+        status="Mission Dossier"
+      />
+
+      {/* Overview & Mission Purpose */}
+      <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <GlassCard tier="raised" className="p-6 sm:p-8">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-rose">
+            Scientific Rationale
+          </p>
+          <h3 className="mt-1 font-display text-xl font-bold text-cream">
+            Why fire behaves differently beyond gravity
+          </h3>
+
+          <div className="mt-4 space-y-4 text-xs leading-relaxed text-muted sm:text-sm">
+            <p>
+              On Earth, gravity acts on density gradients: hot combustion gases expand, become buoyant, and rise rapidly. This buoyancy-driven flow elongates flames into familiar teardrop shapes and drives natural convective circulation.
+            </p>
+            <p>
+              In orbital microgravity (~10⁻⁶ g), buoyancy is virtually eliminated. Flames become spherical, transport is governed primarily by molecular diffusion and forced ventilation, and soot residence times increase dramatically. Understanding these phenomena is vital for crewed deep-space mission design.
+            </p>
+
+            <div className="mt-4 rounded-2xl border border-cosmic bg-void/50 p-4">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-rose">
+                System Boundary Statement
+              </span>
+              <p className="mt-1 font-mono text-xs text-cream/90">
+                IGNIS makes the boundary between a primary NASA fact, an analysis operation, and an illustrative simulation visible on every screen.
+              </p>
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* Expandable Principles Accordion */}
+        <GlassCard tier="raised" className="p-6 sm:p-8">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-rose">
+            Ethics &amp; Trust
+          </p>
+          <h3 className="mt-1 font-display text-xl font-bold text-cream">
+            Integrity Protocol
+          </h3>
+
+          <div className="mt-4 space-y-2">
+            {principles.map((item, idx) => {
+              const isOpen = openAccordion === idx;
+              return (
+                <div
+                  key={item.title}
+                  className="rounded-2xl border border-cosmic/70 bg-void/50 overflow-hidden transition-colors"
+                >
+                  <button
+                    onClick={() => setOpenAccordion(isOpen ? null : idx)}
+                    className="flex w-full items-center justify-between p-4 text-left font-display text-xs font-semibold text-cream hover:text-rose transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <CheckCircle2 className="h-4 w-4 text-rose shrink-0" />
+                      <span>{item.title}</span>
+                    </div>
+                    <ChevronDown
+                      className={`h-4 w-4 text-muted transition-transform duration-200 ${
+                        isOpen ? 'rotate-180 text-rose' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {isOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="px-4 pb-4 text-xs leading-relaxed text-muted border-t border-cosmic/40 pt-2"
+                    >
+                      {item.content}
+                    </motion.div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Animated Vertical Timeline */}
+      <GlassCard tier="raised" className="p-6 sm:p-10">
+        <div className="text-center max-w-xl mx-auto mb-10">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-rose">
+            Microgravity Evolution
+          </p>
+          <h3 className="mt-1 font-display text-2xl font-bold text-cream">
+            NASA Flight Research Trajectory
+          </h3>
+          <p className="mt-2 text-xs text-muted">
+            From the initial drop towers and Space Shuttle Get-Away-Specials to the International Space Station and Artemis lunar habitats.
+          </p>
+        </div>
+
+        <div className="relative max-w-3xl mx-auto">
+          {/* Vertical Central Line */}
+          <div className="absolute left-4 sm:left-1/2 top-4 bottom-4 w-px -translate-x-1/2 bg-gradient-to-b from-rose via-mauve to-cosmic/30" />
+
+          <div className="space-y-12">
+            {timelineEvents.map((evt, idx) => {
+              const isEven = idx % 2 === 0;
+              return (
+                <div
+                  key={evt.phase}
+                  className={`relative flex flex-col sm:flex-row items-start ${
+                    isEven ? 'sm:flex-row-reverse' : ''
+                  }`}
+                >
+                  {/* Central Node Orb */}
+                  <div className="absolute left-4 sm:left-1/2 -translate-x-1/2 flex h-8 w-8 items-center justify-center rounded-full border border-rose/60 bg-void shadow-[0_0_15px_rgba(209,169,167,0.4)] z-10">
+                    <div className="h-2.5 w-2.5 rounded-full bg-rose" />
+                  </div>
+
+                  {/* Card Content */}
+                  <div
+                    className={`ml-10 sm:ml-0 sm:w-1/2 ${
+                      isEven ? 'sm:pl-10' : 'sm:pr-10'
+                    }`}
+                  >
+                    <div className="rounded-2xl border border-cosmic/80 bg-void/60 p-5 shadow-glass-highlight">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-[10px] uppercase tracking-wider text-rose">
+                          {evt.era}
+                        </span>
+                        <Badge tone="rose">{evt.badge}</Badge>
+                      </div>
+                      <h4 className="mt-2 font-display text-base font-bold text-cream">
+                        {evt.title}
+                      </h4>
+                      <p className="mt-2 text-xs leading-relaxed text-muted">
+                        {evt.desc}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* Architecture Diagram Cards */}
+      <div>
+        <div className="mb-6">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-rose">
+            System Implementation
+          </p>
+          <h3 className="mt-1 font-display text-xl font-bold text-cream">
+            Engineered for Precision &amp; Portability
+          </h3>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <GlassCard tier="raised" className="p-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-rose/30 bg-rose/10 text-rose mb-4">
+              <Code2 className="h-5 w-5" />
+            </div>
+            <Badge tone="rose">Modern Core</Badge>
+            <h4 className="mt-3 font-display text-base font-bold text-cream">
+              Standard Stack
+            </h4>
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              Next.js 15 App Router, React 18/19 compatibility, Tailwind CSS tokens, Canvas 2D, Recharts, and Framer Motion. Zero WebGL/Three.js footprint.
+            </p>
+          </GlassCard>
+
+          <GlassCard tier="raised" className="p-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-rose/30 bg-rose/10 text-rose mb-4">
+              <Server className="h-5 w-5" />
+            </div>
+            <Badge tone="rose">Vercel Ready</Badge>
+            <h4 className="mt-3 font-display text-base font-bold text-cream">
+              Independent Deployment
+            </h4>
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              Standard npm lifecycle scripts (dev, build, start). Deploys to Vercel, Netlify, or Docker with zero proprietary vendor hooks.
+            </p>
+          </GlassCard>
+
+          <GlassCard tier="raised" className="p-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-rose/30 bg-rose/10 text-rose mb-4">
+              <LockKeyhole className="h-5 w-5" />
+            </div>
+            <Badge tone="amber">Client Sandbox</Badge>
+            <h4 className="mt-3 font-display text-base font-bold text-cream">
+              Optional AI Adapter
+            </h4>
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              Connects to OpenAI-compatible endpoints via server environment variables. Operates completely in offline fallback mode without an AI key.
+            </p>
+          </GlassCard>
+
+          <GlassCard tier="raised" className="p-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-rose/30 bg-rose/10 text-rose mb-4">
+              <FileText className="h-5 w-5" />
+            </div>
+            <Badge tone="mauve">Included</Badge>
+            <h4 className="mt-3 font-display text-base font-bold text-cream">
+              Full Documentation
+            </h4>
+            <p className="mt-2 text-xs leading-relaxed text-muted">
+              Architecture specs, privacy guarantees, terms of exploration, and scientific disclaimers packaged directly in the repository docs.
+            </p>
+          </GlassCard>
+        </div>
+      </div>
+
+      {/* Contributor Note & Open Source Index */}
+      <GlassCard tier="raised" className="p-6 sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-rose">
+              Institutional Attribution
+            </p>
+            <h4 className="mt-1 font-display text-base font-bold text-cream">
+              NASA Glenn Research Center &amp; Physical Sciences Program
+            </h4>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted">
+              IGNIS references research conducted under the NASA Glenn Combustion Science program, NASA Physical Sciences Informatics (PSI), and NASA Technical Reports Server (NTRS). All citations remain attributed to their respective principal investigators.
+            </p>
+          </div>
+          <Link href="/research" className="shrink-0">
+            <Button variant="secondary">
+              <Github className="h-4 w-4" /> Open Source Index
+            </Button>
+          </Link>
+        </div>
+      </GlassCard>
+    </div>
+  );
 }

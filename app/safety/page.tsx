@@ -1,23 +1,205 @@
 import Link from 'next/link';
-import { ArrowUpRight, Flame, Gauge, Info, Radio, ShieldAlert, Wind } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Flame,
+  Gauge,
+  Info,
+  Radio,
+  ShieldAlert,
+  Wind,
+  ShieldCheck,
+  Compass,
+} from 'lucide-react';
 import { SectionHeader } from '@/components/section-header';
-import { Badge, Card, CardContent, CardHeader } from '@/components/ui';
+import { Badge, Button } from '@/components/ui';
+import { GlassCard } from '@/components/glass-card';
 import { NASA_COMBUSTION_OVERVIEW, researchRecords } from '@/lib/research';
 
 const insightGroups = [
-  { title: 'Flame behaviour', icon: Flame, tone: 'amber' as const, text: 'NASA describes buoyant flow as a dominant influence on terrestrial flames. Reduced gravity suppresses that flow and can reveal flame structures that are difficult to isolate on Earth.', source: 'overview-microgravity' },
-  { title: 'Heat transfer & flow', icon: Wind, tone: 'cyan' as const, text: 'Removing buoyancy does not remove heat transfer. It changes the transport regime that couples hot gases, the surrounding mixture and the fuel surface.', source: 'overview-microgravity' },
-  { title: 'Conditions & oxygen', icon: Gauge, tone: 'blue' as const, text: 'FLEX is documented as studying inert-gas suppression and limiting oxygen conditions for steady combustion. IGNIS surfaces the parameter, not a universal threshold.', source: 'flex' },
-  { title: 'Fuel & smoke', icon: Radio, tone: 'amber' as const, text: 'NASA identifies different smoke signatures for hydrocarbon fuels and plastics. Detector strategy therefore needs to account for material and smoke type.', source: 'same' },
-  { title: 'Experimental limits', icon: Info, tone: 'cyan' as const, text: 'An overview or repository record can establish that an investigation exists and what it studies. It does not automatically provide the underlying time series, calibration or uncertainty budget.', source: 'psi-60' },
-  { title: 'Spacecraft relevance', icon: ShieldAlert, tone: 'blue' as const, text: 'SoFIE, FLEX and Saffire show how microgravity combustion research connects to flammability screening, suppression and crewed-spacecraft fire safety. These are research links, not operational certification.', source: 'saffire' },
+  {
+    title: 'Flame Behaviour',
+    icon: Flame,
+    tone: 'amber' as const,
+    text: 'NASA describes buoyant flow as a dominant influence on terrestrial flames. Reduced gravity suppresses that flow and can reveal flame structures that are difficult to isolate on Earth.',
+    source: 'overview-microgravity',
+  },
+  {
+    title: 'Heat Transfer & Flow',
+    icon: Wind,
+    tone: 'rose' as const,
+    text: 'Removing buoyancy does not remove heat transfer. It alters the convective and radiative transport regimes that couple hot gases, the surrounding cabin mixture and the fuel surface.',
+    source: 'overview-microgravity',
+  },
+  {
+    title: 'Conditions & Oxygen',
+    icon: Gauge,
+    tone: 'mauve' as const,
+    text: 'FLEX is documented as investigating inert-gas suppression and limiting oxygen conditions for steady combustion. IGNIS surfaces the parameter, not a universal threshold.',
+    source: 'flex',
+  },
+  {
+    title: 'Fuel & Smoke Signatures',
+    icon: Radio,
+    tone: 'amber' as const,
+    text: 'NASA identifies disparate smoke aerosol signatures for hydrocarbon fuels versus composite polymers. Spacecraft detector topologies must account for altered particle transport and agglomeration.',
+    source: 'same',
+  },
+  {
+    title: 'Experimental Limits',
+    icon: Info,
+    tone: 'rose' as const,
+    text: 'A repository metadata record confirms an investigation exists and categorizes its parameters. It does not automatically provide row-level calibration or complete uncertainty budgets.',
+    source: 'psi-60',
+  },
+  {
+    title: 'Spacecraft Relevance',
+    icon: ShieldAlert,
+    tone: 'rose' as const,
+    text: 'SoFIE, FLEX and Saffire illustrate how fundamental microgravity combustion informs material flammability screening and habitat suppression protocols. These represent qualitative research links, not operational certification.',
+    source: 'saffire',
+  },
 ];
 
 export default function SafetyPage() {
-  return <>
-    <SectionHeader eyebrow="06 / safety intelligence" title="Fire Safety Intelligence" description="A qualitative evidence layer for understanding why spacecraft fire safety needs microgravity-specific research. No invented risk score, no emergency prediction." status="Qualitative only" />
-    <div className="mb-5 rounded-2xl border border-amber/25 bg-amber/[0.07] p-5"><div className="flex gap-3"><ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber" /><div><p className="text-sm font-semibold text-amber-100">Interpretation boundary</p><p className="mt-1 max-w-4xl text-sm leading-6 text-amber-100/70">These cards explain how documented research themes may matter to spacecraft fire safety. They do not certify a material, prescribe crew action, or calculate a numerical fire-risk score.</p></div></div></div>
-    <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{insightGroups.map((item) => { const Icon = item.icon; const record = researchRecords.find((candidate) => candidate.id === item.source); return <Card key={item.title} className="group"><CardContent><div className="flex items-start justify-between gap-4"><div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${item.tone === 'amber' ? 'border-amber/25 bg-amber/10 text-amber' : item.tone === 'blue' ? 'border-blue/25 bg-blue/10 text-blue' : 'border-cyan/25 bg-cyan/10 text-cyan'}`}><Icon className="h-5 w-5" /></div><Badge tone={item.tone}>Research lens</Badge></div><h2 className="mt-5 text-lg font-semibold text-white">{item.title}</h2><p className="mt-3 text-sm leading-6 text-muted">{item.text}</p>{record ? <a className="mt-5 inline-flex items-center gap-1.5 text-xs font-semibold text-cyan hover:text-white" href={record.sourceUrl} target="_blank" rel="noreferrer">Source: {record.title} <ArrowUpRight className="h-3.5 w-3.5" /></a> : null}</CardContent></Card>; })}</section>
-    <Card className="mt-5"><CardHeader><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-cyan">Safety reading path</p><h2 className="mt-2 text-lg font-semibold text-white">Move from phenomenon to source</h2></CardHeader><CardContent className="grid gap-4 md:grid-cols-3"><Link href="/research" className="rounded-xl border border-line bg-ink/35 p-4 transition hover:border-cyan/30"><p className="font-mono text-[10px] text-cyan">01 / discover</p><p className="mt-3 text-sm font-semibold text-white">Open a NASA-linked record</p><p className="mt-2 text-xs leading-5 text-muted">Start with the original description, date and availability status.</p></Link><Link href="/compare" className="rounded-xl border border-line bg-ink/35 p-4 transition hover:border-cyan/30"><p className="font-mono text-[10px] text-cyan">02 / compare</p><p className="mt-3 text-sm font-semibold text-white">Compare documented conditions</p><p className="mt-2 text-xs leading-5 text-muted">Keep objective, fuel, oxygen and measurement differences visible.</p></Link><a href={NASA_COMBUSTION_OVERVIEW} target="_blank" rel="noreferrer" className="rounded-xl border border-line bg-ink/35 p-4 transition hover:border-cyan/30"><p className="font-mono text-[10px] text-cyan">03 / verify</p><p className="mt-3 text-sm font-semibold text-white">Return to NASA’s overview</p><p className="mt-2 text-xs leading-5 text-muted">Use the source organization’s page for full context and current links.</p></a></CardContent></Card>
-  </>;
+  return (
+    <div className="space-y-8">
+      <SectionHeader
+        eyebrow="06 / safety intelligence"
+        title="Fire Safety Intelligence"
+        description="A qualitative evidence framework examining why spacecraft fire prevention requires microgravity-specific science. No arbitrary numerical hazard scores, no emergency forecasting."
+        status="Qualitative Framework"
+      />
+
+      {/* Prominent Amber "Interpretation Boundary" Banner */}
+      <div className="rounded-[28px] border border-amber/40 bg-amber/[0.08] p-6 sm:p-8 shadow-[0_0_40px_rgba(243,166,91,0.15)] backdrop-blur-2xl">
+        <div className="flex items-start gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber/50 bg-amber/20 text-amber shadow-[0_0_15px_rgba(243,166,91,0.3)]">
+            <ShieldAlert className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="font-display text-lg font-bold text-amber">
+              Critical Interpretation Boundary
+            </h3>
+            <p className="mt-2 text-xs leading-relaxed text-amber/90 sm:text-sm">
+              These insights evaluate how published microgravity combustion research informs spacecraft habitat design. They do not certify crewed materials, prescribe operational fire-fighting actions, or compute synthetic numerical risk indexes. Real mission validation requires certified NASA Glenn / Johnson Space Center safety reviews.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 6 Glass Cards with Animated Line Icons & Glow */}
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {insightGroups.map((item) => {
+          const Icon = item.icon;
+          const record = researchRecords.find((r) => r.id === item.source);
+
+          return (
+            <GlassCard
+              key={item.title}
+              tier="raised"
+              spotlight={true}
+              className="flex flex-col justify-between p-6 hover:border-rose/30"
+            >
+              <div>
+                <div className="flex items-start justify-between">
+                  <div
+                    className={`flex h-11 w-11 items-center justify-center rounded-2xl border transition-transform duration-300 group-hover:scale-105 ${
+                      item.tone === 'amber'
+                        ? 'border-amber/40 bg-amber/15 text-amber shadow-[0_0_15px_rgba(243,166,91,0.2)]'
+                        : 'border-rose/40 bg-rose/15 text-rose shadow-[0_0_15px_rgba(209,169,167,0.2)]'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <Badge tone={item.tone}>Research Lens</Badge>
+                </div>
+
+                <h3 className="mt-5 font-display text-lg font-bold text-cream">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-xs leading-relaxed text-muted">
+                  {item.text}
+                </p>
+              </div>
+
+              {record && (
+                <div className="mt-6 border-t border-cosmic/60 pt-3">
+                  <a
+                    href={record.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-rose hover:underline"
+                  >
+                    <span>Source: {record.title.slice(0, 32)}...</span>
+                    <ArrowUpRight className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
+            </GlassCard>
+          );
+        })}
+      </div>
+
+      {/* Safety Reading Path */}
+      <GlassCard tier="raised" className="p-6 sm:p-8">
+        <div className="border-b border-cosmic/60 pb-4">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-rose">
+            Scientific Protocol
+          </p>
+          <h3 className="mt-1 font-display text-lg font-bold text-cream">
+            Structured Evidence Trajectory
+          </h3>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <Link
+            href="/research"
+            className="group rounded-2xl border border-cosmic bg-void/50 p-5 transition-all hover:border-rose/40 hover:bg-rose/5"
+          >
+            <span className="font-mono text-[10px] uppercase tracking-widest text-rose">
+              01 / Discover
+            </span>
+            <h4 className="mt-2 text-sm font-bold text-cream group-hover:text-rose transition-colors">
+              Access NASA Source Record
+            </h4>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Inspect primary investigator notes, flight dates, and data availability statuses.
+            </p>
+          </Link>
+
+          <Link
+            href="/compare"
+            className="group rounded-2xl border border-cosmic bg-void/50 p-5 transition-all hover:border-rose/40 hover:bg-rose/5"
+          >
+            <span className="font-mono text-[10px] uppercase tracking-widest text-rose">
+              02 / Compare
+            </span>
+            <h4 className="mt-2 text-sm font-bold text-cream group-hover:text-rose transition-colors">
+              Cross-Examine Conditions
+            </h4>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Examine differences in fuel phase, oxidizer concentration, and suppression mechanics.
+            </p>
+          </Link>
+
+          <a
+            href={NASA_COMBUSTION_OVERVIEW}
+            target="_blank"
+            rel="noreferrer"
+            className="group rounded-2xl border border-cosmic bg-void/50 p-5 transition-all hover:border-rose/40 hover:bg-rose/5"
+          >
+            <span className="font-mono text-[10px] uppercase tracking-widest text-rose">
+              03 / Verify
+            </span>
+            <h4 className="mt-2 text-sm font-bold text-cream group-hover:text-rose transition-colors">
+              Return to Primary Literature
+            </h4>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Consult NASA Glenn Physical Sciences portal for complete peer-reviewed literature.
+            </p>
+          </a>
+        </div>
+      </GlassCard>
+    </div>
+  );
 }

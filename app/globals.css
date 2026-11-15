@@ -10,34 +10,147 @@
   --stellar-rose: #D1A9A7;
   --starlight-cream: #FBE5D8;
   --combustion-amber: #F3A65B;
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --muted: #C4A9BC;
 }
 
-* { box-sizing: border-box; }
-html { background: var(--void-plum); }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--void-plum);
+  color: var(--starlight-cream);
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at 84% -6%, rgba(127,82,118,.24), transparent 26rem),
-    radial-gradient(circle at 18% 18%, rgba(43,18,76,.48), transparent 32rem),
-    var(--void-plum);
+  background-color: var(--void-plum);
   color: var(--starlight-cream);
-  font-family: var(--font-sans);
-}
-::selection { background: rgba(209,169,167,.28); color: #fff; }
-button, a, input, select { -webkit-tap-highlight-color: transparent; }
-a { color: inherit; text-decoration: none; }
-
-@layer utilities {
-  .hairline-grid { background-image: linear-gradient(rgba(209,169,167,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(209,169,167,.045) 1px, transparent 1px); background-size: 32px 32px; }
-  .starfield { background-image: radial-gradient(circle at 12% 18%, rgba(251,229,216,.75) 0 1px, transparent 1.5px), radial-gradient(circle at 76% 28%, rgba(209,169,167,.65) 0 1px, transparent 1.5px), radial-gradient(circle at 54% 82%, rgba(243,166,91,.55) 0 1px, transparent 1.5px), radial-gradient(circle at 92% 72%, rgba(251,229,216,.55) 0 1px, transparent 1.5px); background-size: 210px 180px, 280px 240px, 330px 260px, 390px 300px; }
-  .cosmic-wash { background: radial-gradient(circle at 70% 20%, rgba(127,82,118,.2), transparent 26rem), linear-gradient(135deg, rgba(43,18,76,.32), transparent 50%); }
-  .orbital-motif { transform-origin: 50% 50%; animation: orbit-drift 12s ease-in-out infinite; }
-  .text-balance { text-wrap: balance; }
-  .scrollbar-thin { scrollbar-width: thin; scrollbar-color: #7F5276 transparent; }
+  font-family: var(--font-sans), Inter, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Tabular figures for telemetry & numbers */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: rgba(209, 169, 167, 0.3);
+  color: var(--starlight-cream);
+}
+
+button, a, input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Glass panel default fallback when backdrop-filter unsupported */
+.glass-base {
+  background: rgba(36, 16, 47, 0.55);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid rgba(209, 169, 167, 0.14);
+  box-shadow: 0 30px 80px rgba(8, 0, 14, 0.5), inset 0 1px 0 rgba(251, 229, 216, 0.12);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-base {
+    background: #24102f;
+  }
+}
+
+/* 32px Hairline Grid with radial mask fade */
+.hairline-grid-masked {
+  background-image: 
+    linear-gradient(rgba(81, 42, 89, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(81, 42, 89, 0.28) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: radial-gradient(circle at 50% 30%, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(circle at 50% 30%, black 20%, transparent 80%);
+}
+
+/* Liquid-glass sheen animation */
+.sheen-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.sheen-effect::after {
+  content: '';
+  position: absolute;
+  top: -150%;
+  left: -150%;
+  width: 300%;
+  height: 300%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    transparent 40%,
+    rgba(251, 229, 216, 0.06) 48%,
+    rgba(209, 169, 167, 0.12) 50%,
+    rgba(251, 229, 216, 0.06) 52%,
+    transparent 60%,
+    transparent 100%
+  );
+  transform: rotate(25deg);
+  pointer-events: none;
+  animation: sheen-sweep 7s ease-in-out infinite;
+}
+
+/* Lenis smooth scrolling helper styles */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #180018;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #512A59;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #7F5276;
+}
+
+/* Reduced motion accessibility */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
